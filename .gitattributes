@@ -1,0 +1,12 @@
+* text=auto
+*.py text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.stl binary
+*.png binary
+*.pt binary
+*.mp4 binary
+*.pdf binary
+
+# Preserve supplied model bytes for the SHA-256 provenance manifest.
+models/** -text

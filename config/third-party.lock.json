@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Cheetah-Software",
+    "url": "https://github.com/mit-biomimetics/Cheetah-Software.git",
+    "commit": "c71c5a138d3e418cc833e94e25357ceea8955daa",
+    "license": "MIT"
+  },
+  {
+    "name": "eigen3",
+    "url": "https://github.com/eigenteam/eigen-git-mirror.git",
+    "commit": "cf794d3b741a6278df169e58461f8529f43bce5d",
+    "license": "See COPYING.* in upstream"
+  },
+  {
+    "name": "mjlab",
+    "url": "https://github.com/mujocolab/mjlab.git",
+    "commit": "27577db821fe321c819072a851bdda234b89f32d",
+    "license": "Apache-2.0"
+  }
+]

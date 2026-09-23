@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robost-rs02"
+version = "0.1.0"
+description = "RS02 quadruped simulation and locomotion experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+# Dependencies are managed separately for CPU MuJoCo and GPU RL.
+dependencies = []
+
+[project.scripts]
+rs02-preview = "run_rs02_mujoco:main"
+rs02-stairs = "run_rs02_stairs:main"
+rs02-walk = "rs02_walk:main"
+rs02-mpc = "rs02_mpc:main"
+rs02-evaluate = "evaluate_rs02_stairs_matrix:main"
+rs02-build-swing = "build_cheetah_swing:build"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["audit_rs02_exit", "audit_rs02_run", "build_cheetah_swing", "diagnose_rs02_terrain", "evaluate_rs02_stairs_matrix", "plot_rs02_trial", "render_rs02_run", "render_rs02_trial", "robost_paths", "rs02_course_validation", "rs02_mpc", "rs02_rl", "rs02_rl_damped", "rs02_rl_gait", "rs02_rl_guard", "rs02_rl_rhythm", "rs02_rl_route", "rs02_rl_stairs", "rs02_rl_support", "rs02_walk", "run_rs02_mujoco", "run_rs02_stairs"]

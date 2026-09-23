@@ -1,0 +1,23 @@
+{
+  "rs02_quadruped/docs/RS02_motor_datasheet.md": "1549b4726950f362bec78e0f1252c7555ba66af4a7788049fbc35ebba629b1ad",
+  "rs02_quadruped/docs/joint_table.md": "6a895fbcf836f7960c76b4e014a2a4521f68ecc85963cdbd968aa8ab62b2a2a0",
+  "rs02_quadruped/docs/mujoco_check_model.xml": "dd8d5402f7bb8e11f039541a0de8dffd52adf30d1823b43c56546900361f258f",
+  "rs02_quadruped/docs/standing_pose.json": "58a3542b4149f41994f1f0878ff761f5430a7596ce125048017aabcfd954020f",
+  "rs02_quadruped/docs/standing_pose.yaml": "07d89a8a63193909dd4a6ec019496e24d3fa62f9488ead7e8180fa00fef7c7e9",
+  "rs02_quadruped/meshes/FL_calf.stl": "1ae4c505046bf6b79301e96372010efa9a6359d5f02b85468d19fcaef6c661d3",
+  "rs02_quadruped/meshes/FL_hip.stl": "068df41bd855c42267c206aefc4c9f640ab681c35a99e6380d6ae7a11844e781",
+  "rs02_quadruped/meshes/FL_thigh.stl": "d32a0709479383411bb6face70af2ebabc4a6ec609cb590f132ae1f0db999934",
+  "rs02_quadruped/meshes/FR_calf.stl": "b3e218f8e2a879fed501606a8aefe174d56b3311d161eb80c23f00176576c44e",
+  "rs02_quadruped/meshes/FR_hip.stl": "61bafc32b7a1fdcfdf202db8564261fb18a2876ecbd0fb17c41f30137fa7c1c2",
+  "rs02_quadruped/meshes/FR_thigh.stl": "0927d8c8777e44e52cd1a9d9f9eedd280d1e37dd06476495082d4059b45fa0b9",
+  "rs02_quadruped/meshes/RL_calf.stl": "ac1c6080015e52ca05043d870244e0ada1bfc32f782b38b69ef11cdbbece2dae",
+  "rs02_quadruped/meshes/RL_hip.stl": "e3f716fb9096a2cd79985f48e3d1b0291d0d843833e2296b2c3a8edb95e37c9d",
+  "rs02_quadruped/meshes/RL_thigh.stl": "6c1ed01a8b30653c34672860342aebc07ad030615c55f71836d067b749f26938",
+  "rs02_quadruped/meshes/RR_calf.stl": "a2bb63c372ca38c4dc3e32ae3857a2189e8e32dcc2a30537808933352ce8e25a",
+  "rs02_quadruped/meshes/RR_hip.stl": "8067ef5f2ec9553fb17dd77f4f233a7efa8d5fcee8bb7d44ccc9db905ffc0d8a",
+  "rs02_quadruped/meshes/RR_thigh.stl": "6502c7e1a8012462946a7b7bbb347ffe4253c7cbb3dc3a2f1ff28a743a1e3a6a",
+  "rs02_quadruped/meshes/base.stl": "518929162b3ad9ebf35d877ff393c014245bd1876e517270b3dd6e6d664d7f68",
+  "rs02_quadruped/rs02_quadruped.urdf": "31dd2bd21a5bca3f5408d3af002e19be5cf3eba81279d2ca36cb1033c08446a5",
+  "rs02_quadruped/urdf_summary.json": "af20ba30d7fe13a6fae915bd765456c4fe0cf769be02680c713d40d563ca36bb",
+  "rs02_quadruped/validation_report.json": "c8e737795a20ef6ec258a4c52f24b993c58edac4ac745e2dfda34627c2da590e"
+}
