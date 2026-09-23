@@ -8,5 +8,5 @@
 *.mp4 binary
 *.pdf binary
 
-# Preserve supplied model bytes for the SHA-256 provenance manifest.
-models/** -text
+# Preserve supplied robot assets byte-for-byte.
+assets/rs02/** -text

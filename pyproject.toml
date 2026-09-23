@@ -4,21 +4,42 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robost-rs02"
-version = "0.1.0"
-description = "RS02 quadruped simulation and locomotion experiments"
+version = "0.2.0"
+description = "MuJoCo simulation and locomotion controllers for the RS02 quadruped"
 readme = "README.md"
-requires-python = ">=3.11"
-# Dependencies are managed separately for CPU MuJoCo and GPU RL.
+requires-python = ">=3.11,<3.12"
+keywords = ["quadruped", "mujoco", "robotics", "reinforcement-learning"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering",
+]
 dependencies = []
 
-[project.scripts]
-rs02-preview = "run_rs02_mujoco:main"
-rs02-stairs = "run_rs02_stairs:main"
-rs02-walk = "rs02_walk:main"
-rs02-mpc = "rs02_mpc:main"
-rs02-evaluate = "evaluate_rs02_stairs_matrix:main"
-rs02-build-swing = "build_cheetah_swing:build"
+[project.optional-dependencies]
+simulation = [
+  "imageio==2.37.4",
+  "imageio-ffmpeg==0.6.0",
+  "mujoco==3.13.0",
+  "numpy==2.4.6",
+  "osqp==1.1.3",
+  "pillow==12.3.0",
+  "scipy==1.17.1",
+]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-py-modules = ["audit_rs02_exit", "audit_rs02_run", "build_cheetah_swing", "diagnose_rs02_terrain", "evaluate_rs02_stairs_matrix", "plot_rs02_trial", "render_rs02_run", "render_rs02_trial", "robost_paths", "rs02_course_validation", "rs02_mpc", "rs02_rl", "rs02_rl_damped", "rs02_rl_gait", "rs02_rl_guard", "rs02_rl_rhythm", "rs02_rl_route", "rs02_rl_stairs", "rs02_rl_support", "rs02_walk", "run_rs02_mujoco", "run_rs02_stairs"]
+[project.urls]
+Repository = "https://github.com/Ro-bost/robost_02"
+Releases = "https://github.com/Ro-bost/robost_02/releases"
+
+[project.scripts]
+rs02-preview = "robost.simulation.model:main"
+rs02-stairs = "robost.cli.stairs:main"
+rs02-walk = "robost.simulation.walk:main"
+rs02-mpc = "robost.simulation.mpc:main"
+rs02-evaluate = "robost.cli.evaluate:main"
+rs02-build-swing = "robost.cli.build_swing:build"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["robost*"]

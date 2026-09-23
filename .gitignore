@@ -1,20 +1,29 @@
-# Local experimental evidence and original engineering bundle
+# Local research data and generated artifacts
 /output/
+/runs/
+/checkpoints/
 /archive/
 /RS02_4족로봇_최종정리_2026-09-15
-/third_party/*
-!/third_party/README.md
-# Generated products
+/third_party/
 /build/
 /dist/
+
+# Maintainer notes kept outside the public repository
+/docs/
+/AGENTS.md
+/.ignore
+
+# Python
 *.egg-info/
 __pycache__/
 *.py[cod]
 *.so
-MUJOCO_LOG.TXT
 .pytest_cache/
 .venv/
 venv/
+
+# Local settings and logs
+MUJOCO_LOG.TXT
 .env
 .env.*
 !.env.example

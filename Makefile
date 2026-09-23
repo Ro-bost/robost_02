@@ -1,25 +1,21 @@
 PYTHON ?= python
-export PYTHONPATH := $(CURDIR)/src:$(PYTHONPATH)
 export MUJOCO_GL ?= egl
 
-.PHONY: check test test-core test-rl build-swing release
+.PHONY: check test test-sim test-rl build-swing
+
 check:
-	$(PYTHON) scripts/check_project.py
+	$(PYTHON) -m compileall -q src tests scripts
 
-test:
-	$(PYTHON) -m unittest discover -s tests -v
+test: test-sim
 
-test-core:
-	$(PYTHON) -m unittest discover -s tests -p 'test_rs02_course_validation.py' -v
-	$(PYTHON) -m unittest discover -s tests -p 'test_run_rs02_stairs.py' -v
-	$(PYTHON) -m unittest discover -s tests -p 'test_rs02_terrain.py' -v
-	$(PYTHON) -m unittest discover -s tests -p 'test_rs02_walk.py' -v
+test-sim:
+	$(PYTHON) -m unittest tests.test_validation -v
+	$(PYTHON) -m unittest tests.test_stairs_cli -v
+	$(PYTHON) -m unittest tests.test_terrain -v
+	$(PYTHON) -m unittest tests.test_walk -v
 
 test-rl:
-	$(PYTHON) -m unittest discover -s tests -p 'test_rs02_rl*.py' -v
+	$(PYTHON) -m unittest discover -s tests -p 'test_rl_*.py' -v
 
 build-swing:
-	$(PYTHON) -m build_cheetah_swing
-
-release:
-	$(PYTHON) scripts/export_release.py
+	rs02-build-swing

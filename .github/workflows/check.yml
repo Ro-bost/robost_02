@@ -1,4 +1,4 @@
-name: Source and CPU regression checks
+name: Tests
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
@@ -13,13 +13,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-          cache-dependency-path: config/requirements-mujoco.txt
+          cache-dependency-path: pyproject.toml
       - run: sudo apt-get update && sudo apt-get install -y libosmesa6
-      - run: python -m pip install -r config/requirements-mujoco.txt
-      - run: python scripts/bootstrap_third_party.py --only Cheetah-Software eigen3
-      - run: make check test-core
-      - run: python scripts/export_release.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: robost-source
-          path: dist/robost-source.tar.gz
+      - run: python -m pip install -e '.[simulation]'
+      - run: python scripts/bootstrap_dependencies.py --only Cheetah-Software eigen3
+      - run: make check test-sim
