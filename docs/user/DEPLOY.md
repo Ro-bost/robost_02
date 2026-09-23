@@ -1,13 +1,8 @@
 # GitHub 배포용 구성
 
 현재 디렉터리는 정리 시작 시 Git 저장소가 아니었으며 연결된 원격 저장소도 없었다.
-배포 대상은 [Ro-bost/robost_02](https://github.com/Ro-bost/robost_02)이다.
-현재 GitHub 앱의 파일 생성 요청이 403으로 거부되어 최초 업로드는 대기 중이다.
-로컬 소스 커밋과 원격 연결을 준비했으며, 쓰기 인증이 연결되면 아래 명령으로 업로드한다.
-
-```bash
-git push -u origin main
-```
+배포 대상은 [Ro-bost/robost_02](https://github.com/Ro-bost/robost_02)이며 `main` 브랜치에 업로드했다.
+기본 정책 파일과 소스 압축은 [v0.1.0 Release](https://github.com/Ro-bost/robost_02/releases/tag/v0.1.0)에 분리해 첨부했다.
 이 프로젝트는 로봇 시뮬레이션 코드이므로 웹사이트 배포가 아닌 소스/실행 자료 배포다.
 
 ## 로컬에서 배포 파일 만들기

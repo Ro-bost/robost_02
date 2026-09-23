@@ -10,7 +10,7 @@
 | 동일 정책 비교 | rhythm500의 20cm는 4/6 완주 | 위 rhythm500 요약의 20cm 6개 |
 | 이전 crawl | 15cm 약 699초 완주, 20cm 하강 중 실패 | [WALK 보고서](../reports/WALK_검증_보고서.md) |
 | 하드웨어 안전 | 미검증 | 종아리 접촉, 정격 초과 RMS, 열·지연·4절 링크 미검증 |
-| GitHub 업로드 | `Ro-bost/robost_02` 대상 소스 준비; 연결 앱의 쓰기 API 403으로 대기 | [배포 안내](DEPLOY.md) |
+| GitHub 업로드 | `Ro-bost/robost_02`의 `main`과 v0.1.0 Release에 소스·정책 업로드 | [배포 안내](DEPLOY.md) |
 | 파일 정리 | 코드·문서·모델·테스트 분리 및 배포 도구 추가 | [정리 기록](ORGANIZATION.md) |
 
 두 높이의 6/6은 서로 다른 정책 결과다. 세 초기조건 seed를 각각 두 번 실행한 명목 조건 표본이며,
