@@ -30,9 +30,9 @@ class StairTests(unittest.TestCase):
         np.testing.assert_allclose(np.diff(generator.terrain_origins[:, 0, 0]), 11.0)
         for row, rise in enumerate((0.02, 0.10, 0.18)):
             first = model.geom(f"course_tile_{row * 40}_up_1")
-            self.assertAlmostEqual(first.pos[2] + first.size[2], rise)
+            self.assertAlmostEqual(first.pos[2] + first.size[2], rise - 0.005)
             strip = model.geom(f"course_tile_{row * 40}_up_1_strip_up")
-            self.assertAlmostEqual(strip.pos[2] + strip.size[2], rise + 0.005)
+            self.assertAlmostEqual(strip.pos[2] + strip.size[2], rise)
 
     def test_course_geometry(self):
         for difficulty, rise in ((0.0, 0.02), (0.5, 0.10), (1.0, 0.18)):
@@ -45,10 +45,10 @@ class StairTests(unittest.TestCase):
             for output, box in zip(out.geometries[1:], terrain.iter_boxes()):
                 np.testing.assert_allclose(output.geom.pos, np.array(box.pos) + [1.0, 1.5, 0.0])
                 np.testing.assert_allclose(output.geom.size, box.size)
-                np.testing.assert_allclose(output.geom.friction, [1.0, 0.005, 0.0001])
+                np.testing.assert_allclose(output.geom.friction, box.friction)
             self.assertTrue(all(g.geom.mass == 0 for g in out.geometries))
             self.assertAlmostEqual(out.geometries[10].geom.size[0] * 2, 1.0)
-            self.assertAlmostEqual(out.geometries[1].geom.size[0] * 2, 0.32)
+            self.assertAlmostEqual(out.geometries[1].geom.size[0] * 2, 0.317)
             self.assertAlmostEqual(out.geometries[1].geom.size[1] * 2, 1.6)
         spec = mujoco.MjSpec()
         spec.worldbody.add_body(name="terrain")

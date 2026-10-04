@@ -23,12 +23,22 @@ The robot at its initial standing pose beside the complete 18 cm stair course, i
 | Robot mass, including electronics | 18.082756 kg |
 | Actuated joints | 12 |
 | Hip / thigh / calf torque limits | 17 / 23 / 30 Nm |
-| Stair rise / tread depth | 18 / 32 cm |
+| Lower tread to nosing top / rear riser to nosing tip | 18 / 32 cm |
+| Plain tread rise / structural riser spacing | 17.5 / 31.7 cm |
 | Stair count | 10 ascending + 10 descending |
 | Landing length / stair width | 1.0 / 1.6 m |
-| Raised edge strip | 5 mm high, 6 cm deep |
+| Nosing | 6 cm deep, 3 cm thick, 0.5 cm raised, 0.3 cm overhang |
+| Sliding friction: ordinary stairs / nosings | 1.0 / 1.35 |
 
 Robot assets are in `assets/rs06/`. Terrain dimensions are in `config/courses.json`. The URDF mass, inertia, joint limits and collision geometry are retained.
+
+The approved side section is repeated symmetrically on ascent and descent, with
+nosings at both ends of the landing. At the default 18 cm setting, the landing's
+plain surface is 1.75 m high and its nosing tops are 1.755 m high. The first nosing
+starts at x = 0.75 m; the final nosing ends at x = 7.462 m. Only sliding friction
+is multiplied by 1.35 on nosings; torsional and rolling parameters retain their original values.
+Existing policy results below describe the previous stair geometry and friction;
+the revised course requires new evaluation.
 
 The default RS06 policy is experimental. Previous independent trials recorded 3/3 completions at 6, 10 and 12 cm, and 0/3 at 14 and 18 cm. Flat-ground survival was 3/3 over 60 seconds. Course completion does not establish gait quality or hardware safety. See [PROGRESS.md](PROGRESS.md) for results and remaining work.
 
@@ -142,7 +152,7 @@ MUJOCO_GL=egl robost-evaluate \
   --repeats 1 --speed .25 --duration 60 --output runs/evaluation
 ```
 
-Evaluation uses one environment with automatic resets disabled. It stops at the first failure. Completion requires each foot to land on the exit floor, followed by two seconds with all feet beyond x = 7.66 m. Bypassing the stairs fails the trial.
+Evaluation uses one environment with automatic resets disabled. It stops at the first failure. Completion requires each foot to land on the exit floor, followed by two seconds with all feet beyond x = 7.612 m. Bypassing the stairs fails the trial. The exit boundary comes from the generated course metadata.
 
 ## Training
 
