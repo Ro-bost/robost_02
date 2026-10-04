@@ -1,0 +1,12 @@
+{
+  "real": {
+    "start_m": 0.75,
+    "tread_m": 0.32,
+    "count": 10,
+    "width_m": 1.6,
+    "landing_m": 1.0,
+    "strip_height_m": 0.005,
+    "strip_depth_m": 0.06,
+    "exit_clearance_m": 0.15
+  }
+}

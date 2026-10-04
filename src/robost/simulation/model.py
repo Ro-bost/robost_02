@@ -1,114 +1,123 @@
 #!/usr/bin/env python3
-"""RS02 URDF를 현재 폴더 기준으로 MuJoCo에 로드하고 표시한다.
-
-원본 생성 스크립트의 Windows 절대경로를 사용하지 않는다. URDF에 MuJoCo
-compiler 옵션을 임시로 삽입해 visual STL과 fixed link를 보존한 뒤, 문서에
-기록된 기본 서기 자세를 적용한다.
-"""
+"""Source-backed RS06 v5 URDF MuJoCo preview."""
 
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import os
 from pathlib import Path
-import tempfile
 import time
+import xml.etree.ElementTree as ET
 
 import mujoco
 
 
-from robost.paths import PACKAGE
-
-URDF = PACKAGE / "rs02.urdf"
-POSE = PACKAGE / "standing_pose.json"
+from robost.simulation.hardware import JOINT_NAMES, LEGS, get_hardware
 
 
-def load_model(pose_name: str = "stand") -> tuple[mujoco.MjModel, mujoco.MjData]:
-    """Visual mesh와 fixed body를 보존하며 URDF를 읽는다."""
-    source = URDF.read_text(encoding="utf-8")
-    compiler = (
-        '<mujoco><compiler meshdir="meshes" strippath="true" '
-        'discardvisual="false" fusestatic="false" '
-        'balanceinertia="false"/></mujoco>'
+def robot_spec(payload: str = "nominal", *, floating: bool = True) -> mujoco.MjSpec:
+    """Import the supplied URDF without changing inertias, ranges or shapes.
+
+    URDF visual/collision names are qualified by their link to avoid duplicate
+    names in v5. Collision groups only control display; masks remain enabled.
+    Motor armature uses the supplied nominal value. CPU simulations can apply
+    hardware.update_reflected_inertia for the angle-dependent knee inertia.
+    """
+    hardware = get_hardware(payload)
+    root = ET.parse(hardware.urdf).getroot()
+    options = root.find("mujoco")
+    if options is None:
+        options = ET.SubElement(root, "mujoco")
+    compiler = options.find("compiler")
+    if compiler is None:
+        compiler = ET.SubElement(options, "compiler")
+    compiler.attrib.update(
+        meshdir=str(hardware.urdf.parent / "meshes"),
+        strippath="true",
+        discardvisual="false",
+        fusestatic="false",
+        balanceinertia="false",
     )
-    marker = '<robot name="rs02_quadruped">'
-    if marker not in source:
-        raise RuntimeError(f"예상한 robot 태그를 찾지 못했습니다: {URDF}")
-    patched = source.replace(marker, marker + compiler, 1)
-
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix=".urdf",
-            prefix=".rs02_mujoco_",
-            dir=PACKAGE,
-            delete=False,
-        ) as stream:
-            stream.write(patched)
-            temp_path = Path(stream.name)
-        model = mujoco.MjModel.from_xml_path(str(temp_path))
-    finally:
-        if temp_path is not None:
-            temp_path.unlink(missing_ok=True)
-
-    palette = {
-        "base": (0.62, 0.66, 0.67, 1.0),
-        "hip": (0.11, 0.42, 0.52, 1.0),
-        "thigh": (0.45, 0.50, 0.53, 1.0),
-        "calf": (0.76, 0.35, 0.15, 1.0),
-        "foot": (0.12, 0.12, 0.12, 1.0),
-    }
-    for geom_id in range(model.ngeom):
-        body_name = model.body(int(model.geom_bodyid[geom_id])).name
-        if model.geom_type[geom_id] == mujoco.mjtGeom.mjGEOM_MESH:
-            part = "base" if body_name == "base" else body_name.split("_", 1)[1]
-            model.geom_rgba[geom_id] = palette[part]
-        elif body_name.endswith("_foot"):
-            model.geom_group[geom_id] = 1
-            model.geom_rgba[geom_id] = palette["foot"]
+    for link in root.findall("link"):
+        for role in ("collision", "visual"):
+            for index, geom in enumerate(link.findall(role)):
+                suffix = geom.get("name", str(index))
+                geom.set("name", f"{link.get('name')}_{role}_{suffix}")
+    spec = mujoco.MjSpec.from_string(ET.tostring(root, encoding="unicode"))
+    base = spec.body("base")
+    if floating:
+        base.pos = (0.0, 0.0, hardware.standing_height)
+        base.add_joint(name="root", type=mujoco.mjtJoint.mjJNT_FREE)
+    for name, armature in zip(JOINT_NAMES, hardware.armatures):
+        spec.joint(name).armature = armature
+    for geom in spec.geoms:
+        if "_collision_" in geom.name:
+            geom.group = 3
+            geom.contype = 1
+            geom.conaffinity = 1
+            # Nominal friction; source proposal 0.6–1.0.
+            geom.friction = (1.0, 0.005, 0.0001)
         else:
-            model.geom_group[geom_id] = 3
+            geom.group = 1
+            geom.contype = 0
+            geom.conaffinity = 0
+    for leg in LEGS:
+        spec.body(leg + "_foot").add_site(name=leg, size=[0.005, 0, 0], group=5)
+    imu = spec.body("imu_link")
+    imu.add_site(name="imu", size=[0.005, 0, 0], group=5)
+    for name, kind in (
+        ("imu_ang_vel", mujoco.mjtSensor.mjSENS_GYRO),
+        ("imu_lin_vel", mujoco.mjtSensor.mjSENS_VELOCIMETER),
+    ):
+        spec.add_sensor(name=name, type=kind, objtype=mujoco.mjtObj.mjOBJ_SITE, objname="imu")
+    spec.add_sensor(
+        name="root_angmom",
+        type=mujoco.mjtSensor.mjSENS_SUBTREEANGMOM,
+        objtype=mujoco.mjtObj.mjOBJ_BODY,
+        objname="base",
+    )
+    spec.option.timestep = 0.002
+    spec.option.gravity = (0.0, 0.0, -9.81)
+    return spec
 
+
+def load_model(
+    pose_name: str = "stand", payload: str = "nominal"
+) -> tuple[mujoco.MjModel, mujoco.MjData]:
+    """Load a fixed-base preview with all supplied visual and fixed links."""
+    hardware = get_hardware(payload)
+    model = robot_spec(payload, floating=False).compile()
     model.vis.headlight.ambient[:] = (0.35, 0.35, 0.35)
     model.vis.headlight.diffuse[:] = (0.65, 0.65, 0.65)
     model.vis.headlight.specular[:] = (0.1, 0.1, 0.1)
-
     data = mujoco.MjData(model)
     if pose_name == "stand":
-        pose = json.loads(POSE.read_text(encoding="utf-8"))["joints"]
+        pose = hardware.standing_joint_positions
     elif pose_name == "cad":
+        angle = -95.083
         pose = {
             f"{leg}_{joint}_joint": value
-            for leg in ("FR", "FL", "RR", "RL")
-            for joint, value in (("hip", 0.0), ("thigh", 0.0),
-                                 ("calf", math.radians(-95.338)))
+            for leg in LEGS
+            for joint, value in (("hip", 0.0), ("thigh", 0.0), ("calf", math.radians(angle)))
         }
     else:
         raise ValueError(f"지원하지 않는 자세입니다: {pose_name}")
     for joint_name, value in pose.items():
-        joint_id = model.joint(joint_name).id
-        data.qpos[model.jnt_qposadr[joint_id]] = value
+        data.qpos[model.joint(joint_name).qposadr] = value
     mujoco.mj_forward(model, data)
     return model, data
 
 
-def print_summary(model: mujoco.MjModel, pose_name: str) -> None:
-    total_mass = float(model.body_mass.sum())
+def print_summary(model: mujoco.MjModel, pose_name: str, payload: str = "nominal") -> None:
+    hardware = get_hardware(payload)
     print(f"MuJoCo {mujoco.__version__}")
-    print(f"URDF: {URDF}")
+    print(f"URDF: {hardware.urdf}")
     print(
-        "로드 결과: "
-        f"body={model.nbody}, joint={model.njnt}, "
-        f"geom={model.ngeom}, mesh={model.nmesh}, mass={total_mass:.4f} kg"
+        f"로드 결과: body={model.nbody}, joint={model.njnt}, "
+        f"geom={model.ngeom}, mesh={model.nmesh}, mass={model.body_mass.sum():.6f} kg"
     )
-    if pose_name == "cad":
-        print("표시 자세: CAD 저장 자세 (hip=0, thigh=0, calf=-95.338 deg)")
-    else:
-        print("표시 자세: 서기 자세 (hip=0, thigh=0.68022, calf=-1.3664 rad)")
+    print(f"표시 자세: {pose_name}; payload={payload}")
 
 
 def configure_camera(camera: mujoco.MjvCamera) -> None:
@@ -118,11 +127,11 @@ def configure_camera(camera: mujoco.MjvCamera) -> None:
     camera.elevation = -18.0
 
 
-def save_snapshot(
-    model: mujoco.MjModel, data: mujoco.MjData, output: Path
-) -> None:
+def save_snapshot(model: mujoco.MjModel, data: mujoco.MjData, output: Path) -> None:
     from PIL import Image
 
+    if output.exists():
+        raise FileExistsError(f"Refusing to overwrite snapshot: {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
     model.vis.global_.offwidth = 960
     model.vis.global_.offheight = 720
@@ -162,6 +171,7 @@ def show_viewer(model: mujoco.MjModel, data: mujoco.MjData, duration: float = 0)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--payload", choices=("nominal", "5kg"), default="nominal")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -178,17 +188,19 @@ def parse_args() -> argparse.Namespace:
         default="stand",
         help="stand: PNG와 같은 서기 자세(기본값), cad: F3D/STEP 저장 자세",
     )
-    parser.add_argument('--duration', type=float, default=0,
-                        help='미리보기 자동 종료 시간(초); 0이면 창을 닫을 때까지 유지')
+    parser.add_argument(
+        "--duration",
+        type=float,
+        default=0,
+        help="미리보기 자동 종료 시간(초); 0이면 창을 닫을 때까지 유지",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if not URDF.is_file() or not POSE.is_file():
-        raise FileNotFoundError("RS02 URDF 패키지를 현재 폴더에서 찾지 못했습니다.")
-    model, data = load_model(args.pose)
-    print_summary(model, args.pose)
+    model, data = load_model(args.pose, args.payload)
+    print_summary(model, args.pose, args.payload)
     if args.check:
         return
     if args.snapshot is not None:

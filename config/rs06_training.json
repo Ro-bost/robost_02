@@ -1,0 +1,54 @@
+{
+  "description": "RS06 v5 nominal fixed-physics policy adaptation; training resets are not evaluation passes.",
+  "speed_m_s": 0.25,
+  "learning_rate": 0.0003,
+  "learning_rate_schedule": "adaptive",
+  "normalizer_pseudocount": 1000000,
+  "exploration_std": 0.15,
+  "save_interval": 50,
+  "num_steps_per_env": 24,
+  "stages": {
+    "flat": {
+      "episode_seconds": 15.0,
+      "min_rise_m": 0.0,
+      "max_rise_m": 0.0,
+      "terrain_rows": 0,
+      "gait_contact_weight": 0.8,
+      "swing_obstacle_weight": 0.0,
+      "pose_weight": 1.0
+    },
+    "low": {
+      "episode_seconds": 55.0,
+      "min_rise_m": 0.02,
+      "max_rise_m": 0.1,
+      "terrain_rows": 5,
+      "gait_contact_weight": 1.5,
+      "swing_obstacle_weight": -1.0,
+      "pose_weight": 0.5
+    },
+    "stairs": {
+      "episode_seconds": 70.0,
+      "min_rise_m": 0.08,
+      "max_rise_m": 0.18,
+      "terrain_rows": 6,
+      "gait_contact_weight": 3.0,
+      "swing_obstacle_weight": -1.0,
+      "pose_weight": 0.5
+    },
+    "mixed": {
+      "episode_seconds": 70.0,
+      "min_rise_m": 0.0,
+      "max_rise_m": 0.18,
+      "terrain_rows": 10,
+      "max_initial_level": 6,
+      "replay_fractions": {
+        "flat": 0.25,
+        "low_2_4_6_cm": 0.25,
+        "adaptive": 0.5
+      },
+      "gait_contact_weight": 1.5,
+      "swing_obstacle_weight": -1.0,
+      "pose_weight": 0.5
+    }
+  }
+}

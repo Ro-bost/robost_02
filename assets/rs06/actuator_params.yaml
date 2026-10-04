@@ -1,0 +1,65 @@
+# rs06_quadruped v5 — 액추에이터 · 접촉 · 무작위화 파라미터 (2026-09-30)
+# "est" = 추정값 (실측 없음). 실물 측정 뒤 바꿀 것. 단위 SI (N.m, rad, rad/s, kg.m^2).
+# 조인트 이름: {FR,FL,RR,RL}_{hip,thigh,calf}_joint (hip = 롤 x축, thigh = 피치 y축, calf = 무릎 y축)
+
+joints:
+  hip:            # 롤, RobStride 02 직결
+    motor: RS02
+    gear_ratio: 7.75
+    effort_limit: 17.0          # 채택 한계 (= 모터 피크)
+    rated_torque: 6.0           # 규격서 7 은 방열판 조건
+    velocity_limit: 42.94       # 무부하 410 rpm
+    torque_speed: linear        # est: tau_max(w) = effort_limit * (1 - |w|/velocity_limit), 48 V
+    armature: 0.0042            # 규격서 출력측 회전자 관성
+    friction_static: 0.10       # est
+    damping_viscous: 0.05       # est
+  thigh:          # 허벅지 피치, RobStride 06 직결
+    motor: RS06
+    gear_ratio: 9.0
+    effort_limit: 23.0          # 채택 한계 (모터 피크 36)
+    rated_torque: 11.0
+    velocity_limit: 50.27       # 480 rpm
+    torque_speed: linear        # est
+    armature: 0.012
+    friction_static: 0.15       # est
+    damping_viscous: 0.05       # est
+  calf:           # 무릎, RobStride 06 + 4절 링크 (knee_linkage.csv)
+    motor: RS06
+    effort_limit: 30.0          # 채택 한계 (관절측, 구조 · 발열). 모터는 전 범위에서 48 N.m 이상 낼 수 있음
+    urdf_constant_ratio: 1.48   # URDF 직결 조인트의 대표값
+    ratio_range: [1.339, 2.119] # phi 50 – 140 deg (knee_linkage.csv). 55 – 135 deg 에서는 1.339 – 1.719
+    velocity_limit: 33.96       # URDF 값 (= 50.27 / 1.48). 실제는 50.27 / |ratio(q)| = 23.7 – 37.5 rad/s
+    armature: 0.02628           # URDF 값 (= 0.012 * 1.48^2). 실제 0.0215 – 0.054 (q 에 따라)
+    friction_static: 0.20       # est (링크 · 부싱 · 니들 베어링 포함)
+    damping_viscous: 0.08       # est
+    note: 실제 한계를 쓰려면 knee_linkage.py 의 joint_vmax(q), reflected_armature(q) 를 매 스텝 적용
+
+joint_soft_limits_deg:          # URDF safety_controller 와 같은 의미
+  calf_phi: [50, 140]           # CAD 여유 확인 운용 범위 47 – 140 (하드 한계는 50 – 145)
+  thigh: [-150, 150]            # v5 에서 몸통 옆면 틈 8 mm 확보 (v4 는 0.08 mm)
+
+operating_limits:
+  yaw_rate_command_max: 1.5     # rad/s. 2.0 이면 롤 권선 152 C > 145 C. 2분 이내면 3.0 까지
+  standing_height: 0.37         # 피치축 → 발 중심 (m), base 원점 높이 0.396
+  jumping: not_required         # 사용자 우선순위: 점프 · 고속 스핀 불필요 (점프 피크 전류 177 A > 배터리 연속 90 A)
+
+contact:
+  foot: {shape: sphere, radius: 0.02606, material: TPU 95A}
+  friction: [0.6, 1.0]          # v3 무작위화 범위와 같음
+  restitution: 0.0
+
+domain_randomization_suggested:
+  link_mass_scale: [0.9, 1.1]
+  payload_extra_kg: [-0.5, 1.0]         # 전장 4.36 kg 는 배치 예상도 추정. 시뮬레이션 가정 5.0 kg 판은 rs06_quadruped_payload5kg.urdf
+  base_com_offset_m: [-0.02, 0.02]      # est. AGX 앞 / 뒤 배치 미정 (뒤집으면 전장 무게중심 +0.018 m 앞으로)
+  motor_strength_scale: [0.85, 1.05]    # est
+  joint_friction_scale: [0.5, 2.0]      # est
+  joint_damping_scale: [0.5, 2.0]       # est
+  action_latency_s: [0.0, 0.01]         # est (CAN)
+  joint_position_offset_rad: [-0.03, 0.03]   # est. PPA-CF 다리 탄성 (트롯 발끝 처짐 약 12 mm, FEA) 을 흉내 내는 용도
+  imu_noise: {gyro_rad_s: 0.01, acc_m_s2: 0.05}   # est
+
+sensors:                        # URDF fixed 프레임 (base 기준, m)
+  imu_link: [-0.055, -0.071, -0.054]       # CAN · IMU 보드 중심 (배치 예상도, est)
+  camera_link: [0.1655, 0.0, 0.0615]       # RealSense D435i, 15 deg 아래로 (rpy 0 0.2618 0)
+  lidar_link: [0.0, 0.0, 0.0905]           # 2D 라이다 중심

@@ -1,145 +1,122 @@
-# ROBOST RS02
+# URDF and Stair Map Updates
 
-[![Tests](https://github.com/Ro-bost/robost_02/actions/workflows/check.yml/badge.svg)](https://github.com/Ro-bost/robost_02/actions/workflows/check.yml)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/)
-[![MuJoCo](https://img.shields.io/badge/MuJoCo-3.13-orange.svg)](https://mujoco.org/)
+MuJoCo simulation for the **RS06 v5 quadruped**, with an updated URDF and a stair map based on measured dimensions. Robot and terrain construction are independent of the controller, so the same scene can be used for reinforcement learning or MPC development.
 
-RS02 4족 로봇을 MuJoCo에서 구동하고, 평지와 계단에서 보행 제어기를 시험하기 위한 프로젝트입니다.
-로봇의 질량, 관절 범위, 충돌 형상과 토크 제한을 유지한 상태에서 고전 제어기와 PPO 정책을 실행할 수 있습니다.
+## Robot and terrain
 
-![RS02 standing pose](assets/rs02.png)
+| Parameter | Default |
+|---|---|
+| Robot mass, including electronics | 18.082756 kg |
+| Actuated joints | 12 |
+| Hip / thigh / calf torque limits | 17 / 23 / 30 Nm |
+| Stair rise / tread depth | 18 / 32 cm |
+| Stair count | 10 ascending + 10 descending |
+| Landing length / stair width | 1.0 / 1.6 m |
+| Raised edge strip | 5 mm high, 6 cm deep |
 
-## 포함된 기능
+Robot assets are in `assets/rs06/`. Terrain dimensions are in `config/courses.json`. The URDF mass, inertia, joint limits and collision geometry are retained.
 
-- RS02 URDF, MuJoCo 모델과 시각 메시
-- 평지 트롯 및 저속 계단 crawl 제어기
-- `mjlab` + RSL-RL 기반 PPO 계단 보행 정책
-- 15cm/20cm 계단 코스의 독립 평가와 1배속 영상 저장
-- 관절 한계, 접촉, 토크와 코스 완주 판정 테스트
+The default RS06 policy is experimental. Previous independent trials recorded 3/3 completions at 6, 10 and 12 cm, and 0/3 at 14 and 18 cm. Flat-ground survival was 3/3 over 60 seconds. Course completion does not establish gait quality or hardware safety. See [PROGRESS.md](PROGRESS.md) for results and remaining work.
 
-현재 제공하는 계단 정책은 높이별로 따로 선택한 정책입니다.
+## Installation
 
-| 계단 높이 | 기본 정책 | 평가 조건 | 결과 |
-|---:|---|---|---:|
-| 15cm | rhythm, iteration 500 | 0.25m/s, seed 42/43/44 × 2 | 6/6 완주 |
-| 20cm | rhythm, iteration 1000 | 0.25m/s, seed 42/43/44 × 2 | 6/6 완주 |
-
-두 결과는 명목 시뮬레이션에서 얻은 값입니다. 동일한 정책의 높이 한계나 실물 로봇의 안전성을 뜻하지 않습니다.
-
-## 설치
-
-Ubuntu와 Python 3.11을 기준으로 확인했습니다. 정적 모델 확인과 고전 제어기는 CPU에서 실행할 수 있고,
-PPO 정책 실행 및 학습에는 NVIDIA GPU와 CUDA 환경이 필요합니다.
-
-### MuJoCo 모델과 고전 제어기
+Use Linux x86_64 and Python 3.11. CPU simulation and GPU training share the **`robost` Conda environment**. GPU training and policy evaluation require an NVIDIA GPU and a CUDA 13-compatible driver. Run from a source checkout.
 
 ```bash
 git clone https://github.com/Ro-bost/robost_02.git
 cd robost_02
-
-conda create -n rs02-sim python=3.11 pip -y
-conda activate rs02-sim
-python -m pip install -e '.[simulation]'
-
-rs02-preview --check
+python scripts/setup_environment.py
+conda activate robost
 ```
 
-창을 열어 서기 자세를 확인하려면 `rs02-preview`를 실행합니다.
-
-MIT Cheetah의 swing trajectory를 사용하는 기존 crawl 제어기는 외부 소스와 `g++` 빌드가 추가로 필요합니다.
+For robot and terrain development without the RL stack:
 
 ```bash
-python scripts/bootstrap_dependencies.py --only Cheetah-Software eigen3
-rs02-build-swing
-rs02-walk --terrain stairs --step-height-cm 15 --duration 10 --headless
+python scripts/setup_environment.py --cpu-only
+conda activate robost
 ```
 
-### PPO 계단 정책
+## Simulation
 
-RL 환경은 학습 당시 패키지 버전을 그대로 사용합니다.
+Preview the robot or run the stair scene with bounded standing control:
 
 ```bash
-python scripts/bootstrap_dependencies.py --only mjlab
-
-conda create -n rs02-rl python=3.11.16 pip -y
-conda activate rs02-rl
-pip install uv==0.12.17
-uv pip install --python "$CONDA_PREFIX/bin/python" -r requirements/rl-lock.txt \
-  --extra-index-url https://pypi.nvidia.com/ --index-strategy unsafe-best-match
-python -m pip install --no-deps -e .
-
-python scripts/download_policies.py
+robost-preview
+robost-scene --duration 30
 ```
 
-## 실행
+The scene command exports `scene.xml` and `scene.mjb` to a new directory under `runs/`. Standing control is a scene check, not a walking test. To restore the exported standing pose:
 
-15cm 또는 20cm 계단 코스를 실시간으로 실행합니다.
+```python
+mujoco.mj_resetDataKeyframe(model, data, model.key("stand").id)
+```
+
+Controllers can construct the model directly through `robost.simulation.model.robot_spec()` or obtain the complete robot and terrain through `robost.cli.scene.build_scene()`.
+
+View policy walking in a desktop window:
 
 ```bash
-rs02-stairs --stairs-cm 15 --speed 0.25
-rs02-stairs --stairs-cm 20 --speed 0.25
+MUJOCO_GL=glfw robost-stairs --stairs-cm 12 --play-seconds 60
+MUJOCO_GL=glfw robost-stairs --stairs-cm 18 --play-seconds 60
 ```
 
-화면 없이 평가하고 결과와 1배속 영상을 `runs/`에 저장하려면 다음과 같이 실행합니다.
+Playback ends at the first failure. Omit `--play-seconds` to keep the failed pose visible. Use `--stairs-cm 0` for flat ground.
+
+Evaluate without a window and save a video:
 
 ```bash
-rs02-stairs --stairs-cm 20 --speed 0.25 --headless --seed 42 --duration 40
+MUJOCO_GL=egl robost-stairs --stairs-cm 18 --headless --duration 60
 ```
 
-정책을 고정해 여러 초기조건을 반복 평가할 수도 있습니다.
+The default checkpoint is `assets/policies/rs06.pt`, verified against `config/rs06_policy.json`. Every height uses the same checkpoint. Results include `evaluation.json`, `evaluation_1x.mp4`, `telemetry.npz`, `qpos_env0.npy` and `scene.mjb`. Existing output directories are never overwritten.
+
+Evaluate multiple heights and seeds in independent processes:
 
 ```bash
-rs02-evaluate \
-  --adapter rhythm \
-  --checkpoint checkpoints/rs02_stairs/20cm.pt \
-  --heights 20 --seeds 42 43 44 --repeats 2 \
-  --speed 0.25 --duration 40 \
-  --output runs/repeat_20cm
+MUJOCO_GL=egl robost-evaluate \
+  --adapter rs06 --checkpoint assets/policies/rs06.pt \
+  --heights 0 6 10 12 14 18 --seeds 42 43 44 \
+  --repeats 1 --speed .25 --duration 60 --output runs/evaluation
 ```
 
-고전 제어기 예시는 아래와 같습니다.
+Evaluation uses one environment with automatic resets disabled. It stops at the first failure. Completion requires each foot to land on the exit floor, followed by two seconds with all feet beyond x = 7.66 m. Bypassing the stairs fails the trial.
+
+## Training
+
+PPO settings are in `config/rs06_training.json`. Adapt the current checkpoint on mixed terrain:
 
 ```bash
-rs02-mpc --terrain flat --speed 0.5 --duration 12 --headless
-rs02-walk --terrain flat --speed 0.25 --duration 30 --headless
+robost-train --checkpoint assets/policies/rs06.pt \
+  --stage mixed --num-envs 256 --iterations 800 --output runs/training
 ```
 
-## 저장소 구조
+Available stages are `flat`, `low`, `stairs` and `mixed`. The commanded speed is 0.25 m/s. Mixed training retains 25% flat terrain and 25% low stairs, with an adaptive curriculum for the remaining 50%. Actor, critic and observation normalization are loaded; the optimizer starts fresh. The final checkpoint after 800 iterations is `model_799.pt`.
+
+Training resets collect PPO data. Rewards and curriculum promotion are not evidence of course completion. Evaluate each new policy independently, including flat ground.
+
+## Repository and development
 
 ```text
-assets/                 RS02 URDF, MJCF, 메시와 README 이미지
-configs/                정책 및 외부 의존성의 버전·해시
-native/                 Cheetah swing trajectory C++ 연결 코드
-requirements/           GPU RL 환경의 고정 패키지 목록
-scripts/                외부 소스와 정책 다운로드 도구
-src/robost/
-  cli/                   사용자 명령
-  rl/                    PPO 환경, 보상, 정책 어댑터와 판정
-  simulation/            모델 로더, MPC와 crawl 제어기
-  tools/                 결과 감사, 렌더링과 그래프 도구
-tests/                   CPU 및 GPU 회귀 테스트
+robost/
+├── src/robost/       Simulation, RL, CLI and analysis tools
+├── tests/           Model, terrain, policy and evaluation checks
+├── assets/          Current URDF, meshes and policy
+├── config/          Terrain, policy, training and environment settings
+├── scripts/         Environment installation
+├── history/         Minimal RS02 reproduction package
+├── README.md        Installation and usage
+└── PROGRESS.md      Results and remaining work
 ```
-
-`runs/`, `checkpoints/`, 외부 저장소와 학습 로그는 Git에 포함하지 않습니다.
-
-## 테스트
 
 ```bash
 make check
-make test-sim
+make lint
+make test-core
+make test-rl
 ```
 
-RL 환경까지 설치한 경우 `make test-rl`을 실행합니다. GitHub Actions는 CPU 테스트를 매 push마다 실행합니다.
+CPU-only installations support `make check lint test-core`. RL tests require the full environment. Use `make format` to apply the shared Python format.
 
-## 기반 프로젝트
+Add code under `src/`, tests under `tests/` and settings under `config/`. Record any changes to physical parameters or completion criteria when comparing results. Report completion, gait quality and hardware safety separately. Generated runs are excluded from Git.
 
-- [mjlab](https://github.com/mujocolab/mjlab): GPU MuJoCo 학습 환경
-- [RSL-RL](https://github.com/leggedrobotics/rsl_rl): PPO 구현
-- [MIT Cheetah Software](https://github.com/mit-biomimetics/Cheetah-Software): swing trajectory
-
-고정한 외부 소스 버전은 `configs/dependencies.json`에 기록되어 있습니다.
-각 외부 프로젝트와 RS02 자산의 권리 조건은 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
-
-## 라이선스
-
-프로젝트 자체의 공개 라이선스는 아직 지정되지 않았습니다. 외부 코드와 제공 자산에는 각 원저작자의 조건이 적용됩니다.
+The historical RS02 URDF, 15/20 cm maps and policies are in `history/`. See [history/README.md](history/README.md) for execution and further training. Third-party and supplied-asset notices are in [NOTICE](NOTICE).

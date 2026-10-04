@@ -1,3 +1,3 @@
-"""RS02 quadruped simulation and locomotion tools."""
+"""RS06 v5 simulation, policy training and independent evaluation."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

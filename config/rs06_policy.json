@@ -1,0 +1,184 @@
+{
+  "adapter": "rs06",
+  "path": "assets/policies/rs06.pt",
+  "sha256": "4ee77201d9895c682317ea5cb34851bfa8c2707d6a2a97a41b19f9e56e0b91d3",
+  "status": "experimental",
+  "course_18cm_completed": false,
+  "speed_m_s": 0.25,
+  "duration_s": 60.0,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "by_height": {
+    "0": {
+      "total": 3,
+      "completed": null,
+      "survived": 3,
+      "failures": {}
+    },
+    "6": {
+      "total": 3,
+      "completed": 3,
+      "survived": 3,
+      "failures": {}
+    },
+    "10": {
+      "total": 3,
+      "completed": 3,
+      "survived": 3,
+      "failures": {}
+    },
+    "12": {
+      "total": 3,
+      "completed": 3,
+      "survived": 3,
+      "failures": {}
+    },
+    "14": {
+      "total": 3,
+      "completed": 0,
+      "survived": 0,
+      "failures": {
+        "illegal_contact": 1,
+        "fell_over": 2
+      }
+    },
+    "18": {
+      "total": 3,
+      "completed": 0,
+      "survived": 0,
+      "failures": {
+        "stalled": 1,
+        "fell_over": 1,
+        "illegal_contact": 1
+      }
+    }
+  },
+  "hardware_pass": null,
+  "selection_note": "Mixed replay restores flat and lower-course performance; fixed policy across heights. Completion does not certify gait quality or hardware safety. Heights 14/18 cm did not complete.",
+  "validation_date": "2026-10-04",
+  "validation_record": "PROGRESS.md",
+  "training": {
+    "stage": "mixed",
+    "iterations": 800,
+    "total_adaptation_iterations": 3100,
+    "num_envs": 256,
+    "num_steps_per_env": 24,
+    "initial_checkpoint_sha256": "0eed125720ee9f2de9108e6fad0519be3296bde14736d8bf18dd1ff7157f401b",
+    "settings": {
+      "description": "RS06 v5 nominal fixed-physics policy adaptation; training resets are not evaluation passes.",
+      "speed_m_s": 0.25,
+      "learning_rate": 0.0003,
+      "learning_rate_schedule": "adaptive",
+      "normalizer_pseudocount": 1000000,
+      "exploration_std": 0.15,
+      "save_interval": 50,
+      "num_steps_per_env": 24,
+      "stages": {
+        "flat": {
+          "episode_seconds": 15.0,
+          "min_rise_m": 0.0,
+          "max_rise_m": 0.0,
+          "terrain_rows": 0,
+          "gait_contact_weight": 0.8,
+          "swing_obstacle_weight": 0.0,
+          "pose_weight": 1.0
+        },
+        "low": {
+          "episode_seconds": 55.0,
+          "min_rise_m": 0.02,
+          "max_rise_m": 0.1,
+          "terrain_rows": 5,
+          "gait_contact_weight": 1.5,
+          "swing_obstacle_weight": -1.0,
+          "pose_weight": 0.5
+        },
+        "stairs": {
+          "episode_seconds": 70.0,
+          "min_rise_m": 0.08,
+          "max_rise_m": 0.18,
+          "terrain_rows": 6,
+          "gait_contact_weight": 3.0,
+          "swing_obstacle_weight": -1.0,
+          "pose_weight": 0.5
+        },
+        "mixed": {
+          "episode_seconds": 70.0,
+          "min_rise_m": 0.0,
+          "max_rise_m": 0.18,
+          "terrain_rows": 10,
+          "max_initial_level": 6,
+          "replay_fractions": {
+            "flat": 0.25,
+            "low_2_4_6_cm": 0.25,
+            "adaptive": 0.5
+          },
+          "gait_contact_weight": 1.5,
+          "swing_obstacle_weight": -1.0,
+          "pose_weight": 0.5
+        }
+      }
+    },
+    "mujoco_version": "3.11.0",
+    "torch_version": "2.14.0",
+    "source_snapshot_sha256": {
+      "rl/__init__.py": "6e83d855b10511db192670fff885edc641abb80a0fa76ea35f2a68130873466e",
+      "paths.py": "12e9566086e630b6c9f31ac59b1780daae73a38623227a82a505667af547af44",
+      "simulation/__init__.py": "822859153c52e8064ffb84897ffee7e6d9130a9bbe17f4c846cb888b8b30267a",
+      "simulation/hardware.py": "89100d6a9c418050d9b9a97627969796d1695492a7ef5455f8fb9d33001ff337",
+      "simulation/terrain.py": "4a5667c77c1f1a92d6b1fca4a3d24eaa9c1277ceedbaa7c8d092a10ee831db4f",
+      "rl/base.py": "b13922fd8e67764fb14b7d5bca65e7eae468756689689c18cf48de78ba7f7f89",
+      "rl/stairs.py": "c988ef48d4721a7830e74e016f747c2a30e927a2b4882f1ce607c128b5b9c2ba",
+      "rl/gait.py": "a5c95dac5be274ecbbe7dcd5cb528102b65734cb0dad74a230ff67d16b91ede4",
+      "rl/support.py": "98fecf1c59ed8742e8f49e5e03f21a2f565cadd7ff809bf86d36b25ed6eec5d4",
+      "rl/route.py": "2a3c2e1ed5a4778aa56c265af89a9cbd7f04c381054a0a25aa6b4fb9450adff1",
+      "rl/rhythm.py": "aec843f469cf842188597ad27015b687082afdecdd4160cf940c32346e9ae804",
+      "simulation/model.py": "a3903820f948000989c551b7223140dd0b2aa305849e6a173193e905bed4ed93",
+      "rl/rs06.py": "c814c6682e9c7a5b86d256601303476ed124716ecaa29750ad22d0d7d8a980ac"
+    },
+    "model_input_sha256": {
+      "rs06_quadruped.urdf": "1d9f7164a38fadf1103a311fdbd0dc0374e0c8c3af23e4364a681ac466ce0552",
+      "actuator_params.yaml": "e561e18dbb4f5ca14690c093256d9246eb32ac671d5cb779c5912d7baedd1557",
+      "knee_linkage.csv": "8d7510ae3258f0fbd717986ae143adae5e1148d9a10c1e476aa03d20af92f777",
+      "urdf_summary.json": "a7d55d2bf397afb69c50014378d96e4a9a14343e8da2d834e6e86466d23efee1",
+      "courses.json": "38ddca0f485901b4df62457613e66bcfa43d7fa861ba1104b74f098e680c4ff2",
+      "rs06_training.json": "88bb9cd9a966573f2126348098a990c46eb81c5886c458b220424a855e6b9dd8"
+    },
+    "hardware": {
+      "mass_kg": 18.082756,
+      "joint_order": [
+        "FR_hip_joint",
+        "FR_thigh_joint",
+        "FR_calf_joint",
+        "FL_hip_joint",
+        "FL_thigh_joint",
+        "FL_calf_joint",
+        "RR_hip_joint",
+        "RR_thigh_joint",
+        "RR_calf_joint",
+        "RL_hip_joint",
+        "RL_thigh_joint",
+        "RL_calf_joint"
+      ],
+      "gravity_m_s2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "physics_dt_s": 0.002,
+      "control_dt_s": 0.02,
+      "urdf_sha256": "1d9f7164a38fadf1103a311fdbd0dc0374e0c8c3af23e4364a681ac466ce0552",
+      "controller": "unchanged bounded PD60/60/80, damping2"
+    },
+    "normalizer_counts_before": {
+      "actor": 8372800.0,
+      "critic": 8372800.0
+    },
+    "normalizer_counts_start": {
+      "actor": 1000000.0,
+      "critic": 1000000.0
+    }
+  }
+}

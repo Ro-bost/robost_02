@@ -15,6 +15,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: sudo apt-get update && sudo apt-get install -y libosmesa6
-      - run: python -m pip install -e '.[simulation]'
-      - run: python scripts/bootstrap_dependencies.py --only Cheetah-Software eigen3
-      - run: make check test-sim
+      - run: python -m pip install -e '.[simulation,dev]'
+      - run: make check lint test-core
+      - run: robost-preview --check
+      - run: robost-scene --check --output /tmp/robost-ci-scene

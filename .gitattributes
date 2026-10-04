@@ -1,12 +1,11 @@
 * text=auto
 *.py text eol=lf
-*.sh text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
 *.md text eol=lf
 *.stl binary
-*.png binary
 *.pt binary
+*.png binary
 *.mp4 binary
-*.pdf binary
-
-# Preserve supplied robot assets byte-for-byte.
-assets/rs02/** -text
+assets/rs06/** -text whitespace=trailing-space,space-before-tab,cr-at-eol
+history/rs02/assets/** -text

@@ -1,0 +1,8 @@
+ROBOST uses MuJoCo, MuJoCo Warp, mjlab, RSL-RL and other Python packages.
+Their respective licenses and copyright notices apply; package distributions
+retain upstream license files. The pinned mjlab source revision is
+27577db821fe321c819072a851bdda234b89f32d (Apache-2.0).
+
+RS02 and RS06 URDF, STL, CAD-derived parameters and policy weights were supplied
+or produced for this project. No additional open-source license is assigned to
+these materials by this notice.

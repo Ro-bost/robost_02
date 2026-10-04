@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "robost-rs02"
-version = "0.2.0"
-description = "MuJoCo simulation and locomotion controllers for the RS02 quadruped"
+name = "robost"
+version = "0.3.0"
+description = "MuJoCo simulation and locomotion controllers for the RS06 v5 quadruped"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 keywords = ["quadruped", "mujoco", "robotics", "reinforcement-learning"]
@@ -18,28 +18,34 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+dev = ["ruff==0.16.10"]
 simulation = [
   "imageio==2.37.4",
   "imageio-ffmpeg==0.6.0",
-  "mujoco==3.13.0",
+  "mujoco==3.11.0",
   "numpy==2.4.6",
-  "osqp==1.1.3",
   "pillow==12.3.0",
-  "scipy==1.17.1",
 ]
+analysis = ["matplotlib==3.11.2"]
 
 [project.urls]
 Repository = "https://github.com/Ro-bost/robost_02"
 Releases = "https://github.com/Ro-bost/robost_02/releases"
 
 [project.scripts]
-rs02-preview = "robost.simulation.model:main"
-rs02-stairs = "robost.cli.stairs:main"
-rs02-walk = "robost.simulation.walk:main"
-rs02-mpc = "robost.simulation.mpc:main"
-rs02-evaluate = "robost.cli.evaluate:main"
-rs02-build-swing = "robost.cli.build_swing:build"
+robost-preview = "robost.simulation.model:main"
+robost-scene = "robost.cli.scene:main"
+robost-stairs = "robost.cli.stairs:main"
+robost-evaluate = "robost.cli.evaluate:main"
+robost-train = "robost.cli.train:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["robost*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E9", "F"]
