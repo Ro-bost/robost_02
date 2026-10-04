@@ -49,10 +49,9 @@ used despite MuJoCo's default maximum-of-geoms friction rule:
 `src/robost/simulation/contact.py` defines the foot material and shared contact
 pairs for CPU scenes, GPU evaluation and generated training terrain. Other
 robot collisions retain their original friction and contact dimensions.
-Existing policy results below describe the previous stair geometry and friction;
-the revised course requires new evaluation.
+The included policy was independently evaluated on this stair geometry and contact material.
 
-The default RS06 policy is experimental. Previous independent trials recorded 3/3 completions at 6, 10 and 12 cm, and 0/3 at 14 and 18 cm. Flat-ground survival was 3/3 over 60 seconds. Course completion does not establish gait quality or hardware safety. See [PROGRESS.md](PROGRESS.md) for results and remaining work.
+The included RS06 policy completed **12 cm and 18 cm courses in 6/6 independent trials each** on 2026-10-05: seeds 42/43/44, two processes per seed, 0.25 m/s, 60-second limit, no resets. Flat-ground 60-second survival and numerical quality passed 3/3 trials. The same checkpoint serves all heights; **download and run it without training**. Course completion does not establish stair gait quality or hardware safety. Heights other than 12/18 cm have not been revalidated with this checkpoint. See [PROGRESS.md](PROGRESS.md) and [config/rs06_policy.json](config/rs06_policy.json) for trial measurements, provenance and historical results.
 
 ## Installation
 
@@ -160,8 +159,12 @@ Evaluate multiple heights and seeds in independent processes:
 ```bash
 MUJOCO_GL=egl robost-evaluate \
   --adapter rs06 --checkpoint assets/policies/rs06.pt \
-  --heights 0 6 10 12 14 18 --seeds 42 43 44 \
-  --repeats 1 --speed .25 --duration 60 --output runs/evaluation
+  --heights 12 18 --seeds 42 43 44 \
+  --repeats 2 --speed .25 --duration 60 --output runs/stair_evaluation
+MUJOCO_GL=egl robost-evaluate \
+  --adapter rs06 --checkpoint assets/policies/rs06.pt \
+  --heights 0 --seeds 42 43 44 --repeats 1 \
+  --speed .25 --duration 60 --output runs/flat_evaluation
 ```
 
 Evaluation uses one environment with automatic resets disabled. It stops at the first failure. Completion requires each foot to land on the exit floor, followed by two seconds with all feet beyond x = 7.612 m. Bypassing the stairs fails the trial. The exit boundary comes from the generated course metadata.
@@ -175,9 +178,49 @@ robost-train --checkpoint assets/policies/rs06.pt \
   --stage mixed --num-envs 256 --iterations 800 --output runs/training
 ```
 
-Available stages are `flat`, `low`, `stairs` and `mixed`. The commanded speed is 0.25 m/s. Mixed training retains 25% flat terrain and 25% low stairs, with an adaptive curriculum for the remaining 50%. Actor, critic and observation normalization are loaded; the optimizer starts fresh. The final checkpoint after 800 iterations is `model_799.pt`.
+Available stages are `flat`, `low`, `stairs`, `target` and `mixed`. The commanded speed is 0.25 m/s. The `target` stage starts across 12, 14, 16 and 18 cm, with 12 cm as its minimum curriculum level. Mixed training retains 25% flat terrain and 25% low stairs, with an adaptive curriculum for the remaining 50%. Actor, critic and observation normalization are loaded; the optimizer starts fresh. The final checkpoint after 800 iterations is `model_799.pt`.
 
 Training resets collect PPO data. Rewards and curriculum promotion are not evidence of course completion. Evaluate each new policy independently, including flat ground.
+
+## Reproduce the selected policy
+
+The bundled `assets/policies/rs06.pt` is the selected `target_v3/model_799.pt`,
+SHA-256 `6f8ffe21ab7a148f149233866a05185e8ada56081805a9c389c17bea0e19851d`. Training is optional; normal playback uses these
+weights directly. Only this current RS06 weight file is shipped. Intermediate
+checkpoints and generated `runs/`, `output/` and `outputs/` directories are ignored.
+
+The adaptation used 512 environments and 24 steps per update, starting from the
+previous bundled checkpoint. On the current code, recover that original weight
+from Git and run the recorded sequence in fresh output directories:
+
+```bash
+mkdir -p runs/reproduce_20261005
+git show 2ec824d:assets/policies/rs06.pt > runs/reproduce_20261005/initial_rs06.pt
+robost-train --checkpoint runs/reproduce_20261005/initial_rs06.pt \
+  --stage target --num-envs 512 --iterations 400 --seed 42 --std .15 \
+  --learning-rate .0003 --normalizer-pseudocount 1000000 \
+  --output runs/reproduce_20261005/target_v1
+robost-train --checkpoint runs/reproduce_20261005/target_v1/model_399.pt \
+  --stage target --num-envs 512 --iterations 800 --seed 43 --std .15 \
+  --learning-rate .0003 --normalizer-pseudocount 1000000 \
+  --output runs/reproduce_20261005/target_v2
+robost-train --checkpoint runs/reproduce_20261005/target_v2/model_799.pt \
+  --stage target --num-envs 512 --iterations 800 --seed 44 --std .12 \
+  --learning-rate .0003 --normalizer-pseudocount 10000000 \
+  --output runs/reproduce_20261005/target_v3
+# Select this independently validated checkpoint; later files require their own evaluation.
+# runs/reproduce_20261005/target_v3/model_799.pt
+```
+
+The selected third-stage checkpoint contains 800 updates, for
+2,000 additional updates and
+24,576,000 transitions across the
+selected lineage. Later training files do not replace an independently validated
+checkpoint automatically. GPU results are not guaranteed to be bitwise identical;
+repeat the independent staircase and flat evaluations above before selecting a
+retrained policy. Full settings and source/input hashes are recorded in the policy
+manifest. The raised terrain-scan rays start 1 m above the base while preserving
+the original observation size and the base-relative height reference.
 
 ## Repository and development
 

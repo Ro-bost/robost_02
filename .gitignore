@@ -1,5 +1,7 @@
 # Generated local experiment results
 /runs/
+/output/
+/outputs/
 
 # Python and build artifacts
 *.egg-info/

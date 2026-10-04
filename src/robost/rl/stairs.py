@@ -22,6 +22,21 @@ from mjlab.terrains.terrain_generator import (
 
 
 @dataclass
+class RaisedGridPattern(GridPatternCfg):
+    """Cast above high treads while retaining the physical frame reference."""
+
+    origin_height: float = 1.0
+
+    def generate_rays(self, mj_model, device):
+        offsets, directions = super().generate_rays(mj_model, device)
+        # Rays starting inside a higher stair hit its underside or the floor.
+        # The sensor's frame_pos_w stays at the base, so height_scan still
+        # reports base_z - tread_z, including negative values ahead uphill.
+        offsets[:, 2] += self.origin_height
+        return offsets, directions
+
+
+@dataclass
 class CourseCfg(SubTerrainCfg):
     def function(self, difficulty, spec, rng):
         del rng
@@ -117,7 +132,7 @@ def make_cfg(num_envs=256, seed=42, evaluate=False):
         name="terrain_scan",
         frame=ObjRef(type="body", name="base", entity="robot"),
         ray_alignment="yaw",
-        pattern=GridPatternCfg(size=(1.6, 1.0), resolution=0.1),
+        pattern=RaisedGridPattern(size=(1.6, 1.0), resolution=0.1),
         max_distance=5.0,
         exclude_parent_body=True,
         include_geom_groups=(0,),

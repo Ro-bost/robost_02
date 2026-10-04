@@ -5,16 +5,90 @@ import torch
 import mujoco
 import numpy as np
 from types import SimpleNamespace
-from robost.rl.stairs import CourseCfg, make_cfg, planar_tracking, course_bounds, course_end
+from robost.rl.stairs import (
+    CourseCfg,
+    RaisedGridPattern,
+    make_cfg,
+    planar_tracking,
+    course_bounds,
+    course_end,
+)
 from robost.rl.base import get_hardware
 from robost.rl import base
 from robost.simulation.hardware import JOINT_NAMES
-from robost.simulation.terrain import Terrain
+from robost.simulation.terrain import Terrain, add_to_spec
 from mjlab.terrains.terrain_generator import TerrainGenerator, TerrainGeneratorCfg
 from mjlab.scene import Scene
+from mjlab.sensor import GridPatternCfg
 
 
 class StairTests(unittest.TestCase):
+    def test_height_scan_sees_high_treads_relative_to_physical_base(self):
+        cfg = make_cfg(1, evaluate=True)
+        scan = next(sensor for sensor in cfg.scene.sensors if sensor.name == "terrain_scan")
+        self.assertIsInstance(scan.pattern, RaisedGridPattern)
+        offsets, directions = scan.pattern.generate_rays(None, "cpu")
+        original, original_directions = GridPatternCfg(
+            size=(1.6, 1.0), resolution=0.1
+        ).generate_rays(None, "cpu")
+        self.assertEqual(offsets.shape, (187, 3))
+        torch.testing.assert_close(offsets[:, :2], original[:, :2])
+        torch.testing.assert_close(directions, original_directions)
+        for cm in (12, 18):
+            terrain = Terrain("stairs", cm)
+            spec = mujoco.MjSpec()
+            body = spec.worldbody.add_body(name="terrain")
+            body.add_geom(
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                pos=[4.5, 0.0, -0.05],
+                size=[5.5, 1.5, 0.05],
+                group=0,
+            )
+            add_to_spec(spec, terrain)
+            model = spec.compile()
+            data = mujoco.MjData(model)
+            mujoco.mj_forward(model, data)
+            for x in (0.7, 1.0, 3.5, 4.75, 7.4):
+                with self.subTest(stairs_cm=cm, base_x=x):
+                    frame = np.array([x, 0.0, terrain.height(x) + get_hardware().standing_height])
+                    hits, distances = [], []
+                    for offset, direction in zip(offsets.numpy(), directions.numpy()):
+                        origin = frame + offset
+                        distance = mujoco.mj_ray(
+                            model,
+                            data,
+                            origin,
+                            direction.astype(float),
+                            np.array([1, 0, 0, 0, 0, 0], dtype=np.uint8),
+                            1,
+                            -1,
+                            np.array([-1], dtype=np.int32),
+                        )
+                        self.assertGreaterEqual(distance, 0.0)
+                        self.assertLess(distance, scan.max_distance)
+                        distances.append(distance)
+                        hits.append(origin + direction * distance)
+                    expected = terrain.height(x + offsets[:, 0].numpy(), offsets[:, 1].numpy())
+                    np.testing.assert_allclose(np.array(hits)[:, 2], expected, atol=1e-7)
+                    sensor = SimpleNamespace(
+                        cfg=scan,
+                        num_frames=1,
+                        num_rays_per_frame=187,
+                        data=SimpleNamespace(
+                            frame_pos_w=torch.tensor(frame).reshape(1, 1, 3),
+                            hit_pos_w=torch.tensor(np.array(hits)).unsqueeze(0),
+                            distances=torch.tensor(distances).unsqueeze(0),
+                        ),
+                    )
+                    measured = base.env_mdp.height_scan(
+                        SimpleNamespace(scene={"terrain_scan": sensor}), "terrain_scan"
+                    )
+                    torch.testing.assert_close(measured[0], torch.tensor(frame[2] - expected))
+                    if cm == 18 and x == 0.7:
+                        # These treads are above the physical base. Starting
+                        # rays at base_z previously returned the floor here.
+                        self.assertTrue(torch.any(measured < 0.0))
+
     def test_effective_tpu_contacts_match_flat_stair_and_generated_training_scenes(self):
         flat = base.make_cfg(1, evaluate=True)
         stairs = make_cfg(1, evaluate=True)

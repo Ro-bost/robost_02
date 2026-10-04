@@ -87,7 +87,7 @@ def main(argv=None):
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        help="Optional override; default is the fixed experimental RS06 checkpoint in config/rs06_policy.json",
+        help="Optional override; default is the fixed RS06 checkpoint in config/rs06_policy.json",
     )
     parser.add_argument(
         "--adapter",

@@ -35,6 +35,16 @@
       "swing_obstacle_weight": -1.0,
       "pose_weight": 0.5
     },
+    "target": {
+      "episode_seconds": 70.0,
+      "min_rise_m": 0.12,
+      "max_rise_m": 0.18,
+      "terrain_rows": 4,
+      "max_initial_level": 3,
+      "gait_contact_weight": 1.5,
+      "swing_obstacle_weight": -1.0,
+      "pose_weight": 0.5
+    },
     "mixed": {
       "episode_seconds": 70.0,
       "min_rise_m": 0.0,
