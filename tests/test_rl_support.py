@@ -49,7 +49,7 @@ class SupportTests(unittest.TestCase):
             robot=SimpleNamespace(
                 site_names=["FR", "FL", "RR", "RL"],
                 data=SimpleNamespace(
-                    site_pos_w=torch.tensor([[[6.0, 0.81, 0.2]] * 4, [[7.8, 0.81, 0.03]] * 4])
+                    site_pos_w=torch.tensor([[[6.0, 0.81, 0.2]] * 4, [[7.63, 0.81, 0.03]] * 4])
                 ),
             )
         )

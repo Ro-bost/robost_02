@@ -37,7 +37,12 @@ def stalled(env):
     return (step - env._robost_progress_step) * env.step_dt > 3.0
 
 
-def foot_outside(env, course_start=0.75, exit_x=7.66, half_width=0.8):
+def foot_outside(env, course_start=None, exit_x=None, half_width=None):
+    if course_start is None or exit_x is None or half_width is None:
+        course = Terrain()
+        course_start = course.start if course_start is None else course_start
+        exit_x = course.exit_x if exit_x is None else exit_x
+        half_width = course.width / 2 if half_width is None else half_width
     robot = env.scene["robot"]
     sites = [robot.site_names.index(leg) for leg in gait.flat.LEGS]
     feet = robot.data.site_pos_w[:, sites] - env.scene.env_origins[:, None, :]

@@ -27,8 +27,8 @@ class RhythmTests(unittest.TestCase):
             cfg = rhythm.HighCourseCfg(size=(11.0, 3.0))
             output = cfg.function(difficulty, spec, np.random.default_rng(42))
             tops = [g.geom.pos[2] + g.geom.size[2] for g in output.geometries]
-            self.assertAlmostEqual(tops[1], rise)
-            self.assertAlmostEqual(max(tops), 10 * rise + 0.005)
+            self.assertAlmostEqual(tops[1], rise - 0.005)
+            self.assertAlmostEqual(max(tops), 10 * (rise - 0.005) + 0.005)
             self.assertEqual(len(tops), 40)
 
 
