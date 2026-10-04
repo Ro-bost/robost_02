@@ -2,6 +2,20 @@
 
 MuJoCo simulation for the **RS06 v5 quadruped**, with an updated URDF and a stair map based on measured dimensions. Robot and terrain construction are independent of the controller, so the same scene can be used for reinforcement learning or MPC development.
 
+## Preview
+
+### Current robot: RS06 v5
+
+![RS06 v5 URDF rendered in MuJoCo in the standing pose](assets/images/rs06_robot.png)
+
+The supplied RS06 v5 URDF and STL meshes, rendered in the standing pose.
+
+### Robot and stair scene
+
+![RS06 v5 at the start of the measured stair map in MuJoCo](assets/images/rs06_stairs.png)
+
+The robot at its initial standing pose beside the complete 18 cm stair course, including the raised edge strips. This is a static scene preview.
+
 ## Robot and terrain
 
 | Parameter | Default |
@@ -20,29 +34,78 @@ The default RS06 policy is experimental. Previous independent trials recorded 3/
 
 ## Installation
 
-Use Linux x86_64 and Python 3.11. CPU simulation and GPU training share the **`robost` Conda environment**. GPU training and policy evaluation require an NVIDIA GPU and a CUDA 13-compatible driver. Run from a source checkout.
+Use **Linux x86_64 and Python 3.11**. Both installation options use a Conda environment named **`robost`**. CPU simulation supports robot, terrain and controller development. Policy playback, evaluation and PPO training also require an NVIDIA GPU and a CUDA 13-compatible driver.
+
+### 1. Prepare the system and download the repository
+
+Install Conda first if it is unavailable; follow the [official Linux installation guide](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html). For Bash, run `conda init bash` and reopen the terminal before continuing.
+
+On Ubuntu or Debian, install Git and the graphics libraries used by the desktop viewer and headless renderer:
 
 ```bash
+sudo apt-get update
+sudo apt-get install -y git libgl1 libegl1 libglfw3 libosmesa6
+
 git clone https://github.com/Ro-bost/robost_02.git
 cd robost_02
-python scripts/setup_environment.py
-conda activate robost
 ```
 
-For robot and terrain development without the RL stack:
+URDFs, meshes, maps and policy checkpoints are included in the checkout. Keep the checkout available after installation: the editable package loads assets and configuration from it. Run the commands below from this repository root.
+
+### 2. Create and activate the environment
 
 ```bash
-python scripts/setup_environment.py --cpu-only
+conda create -n robost python=3.11.16 pip=26.2.1 -y
 conda activate robost
+python --version
 ```
+
+If `robost` already exists with Python 3.11, activate it and skip `conda create`. Activate `robost` again in each new terminal before using the commands in this README.
+
+### 3. Install one dependency stack
+
+**CPU simulation / MPC development** — install MuJoCo, rendering dependencies, this package and development tools:
+
+```bash
+python -m pip install --editable '.[simulation,dev]'
+python -m pip check
+```
+
+**GPU policy execution / RL training** — install the pinned full stack and this package into the same environment:
+
+```bash
+nvidia-smi
+python -m pip install --requirement config/requirements.txt \
+  --extra-index-url https://pypi.nvidia.com/
+python -m pip install --no-deps --editable .
+python -m pip check
+python -c "import torch; print(torch.__version__, torch.version.cuda); assert torch.cuda.is_available(), 'CUDA GPU is unavailable'"
+```
+
+`config/requirements.txt` installs the tested MuJoCo, PyTorch, CUDA runtime and mjlab versions. Git is needed for the pinned mjlab revision; a separate `third_party/` checkout is unnecessary. The NVIDIA driver is installed on the host, outside Conda. The [MuJoCo Python package](https://mujoco.readthedocs.io/en/stable/python.html#installation) includes the MuJoCo library.
+
+As an alternative to the manual environment and dependency steps, run `python scripts/setup_environment.py --cpu-only` for CPU simulation, or `python scripts/setup_environment.py` for the full GPU stack, then `conda activate robost`. The helper creates `robost` when absent and checks installed dependencies.
+
+### 4. Check the installation
+
+Both stacks support these checks without opening a window:
+
+```bash
+robost-preview --check
+robost-scene --check --output runs/scene_check
+MUJOCO_GL=osmesa robost-scene --headless --duration 5 \
+  --output runs/standing_check
+```
+
+Choose a new output directory when repeating a scene command. `glfw` opens the desktop viewer, `egl` provides headless rendering on a supported GPU, and `osmesa` provides headless software rendering. A desktop session is required for the GUI commands below.
 
 ## Simulation
 
 Preview the robot or run the stair scene with bounded standing control:
 
 ```bash
-robost-preview
-robost-scene --duration 30
+MUJOCO_GL=glfw robost-preview
+MUJOCO_GL=glfw robost-scene --duration 30
 ```
 
 The scene command exports `scene.xml` and `scene.mjb` to a new directory under `runs/`. Standing control is a scene check, not a walking test. To restore the exported standing pose:

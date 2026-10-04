@@ -2,6 +2,10 @@
 
 현재 RS06 코드와 독립적이며, `robost` 환경에서는 이 폴더만 복사해 실행할 수 있습니다.
 
+![과거 RS02 로봇 URDF의 MuJoCo 서기 자세](rs02/assets/rs02_robot.png)
+
+보관된 `rs02/assets/rs02.urdf`와 원본 STL을 MuJoCo에서 렌더링한 서기 자세입니다.
+
 ## 구성과 조건
 
 - `rs02/assets/`: 원본 URDF·MuJoCo 모델·참조 STL 13개.
