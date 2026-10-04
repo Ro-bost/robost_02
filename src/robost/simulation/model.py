@@ -14,6 +14,7 @@ import mujoco
 
 
 from robost.simulation.hardware import JOINT_NAMES, LEGS, get_hardware
+from robost.simulation.contact import FOOT_CONDIM, FOOT_FRICTION, FOOT_GEOM_NAMES
 
 
 def robot_spec(payload: str = "nominal", *, floating: bool = True) -> mujoco.MjSpec:
@@ -58,6 +59,9 @@ def robot_spec(payload: str = "nominal", *, floating: bool = True) -> mujoco.MjS
             geom.conaffinity = 1
             # Nominal friction; source proposal 0.6–1.0.
             geom.friction = (1.0, 0.005, 0.0001)
+            if geom.name in FOOT_GEOM_NAMES:
+                geom.condim = FOOT_CONDIM
+                geom.friction = FOOT_FRICTION
         else:
             geom.group = 1
             geom.contype = 0

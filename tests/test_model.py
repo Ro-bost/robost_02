@@ -85,6 +85,19 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(comparison.body_mass.sum(), 18.720756, places=8)
         self.assertGreater(len(np.unique(model.geom_rgba, axis=0)), 4)
 
+    def test_tpu_parameters_are_limited_to_the_four_foot_collision_geoms(self):
+        feet = {leg + "_foot_collision_foot" for leg in ("FR", "FL", "RR", "RL")}
+        for index in range(self.model.ngeom):
+            geom = self.model.geom(index)
+            if "_collision_" not in geom.name:
+                continue
+            if geom.name in feet:
+                self.assertEqual(int(geom.condim[0]), 4)
+                np.testing.assert_array_equal(geom.friction, [0.8, 0.003, 0.0001])
+            else:
+                self.assertEqual(int(geom.condim[0]), 3)
+                np.testing.assert_array_equal(geom.friction, [1.0, 0.005, 0.0001])
+
     def test_cad_knee_table_and_structural_effort_cap(self):
         hw = self.hardware
         q = np.array([hw.standing_joint_positions[name] for name in JOINT_NAMES])

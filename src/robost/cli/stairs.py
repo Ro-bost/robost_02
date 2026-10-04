@@ -134,7 +134,7 @@ def main(argv=None):
     if using_default_policy:
         print(default_policy_description())
     if args.stairs_cm:
-        print("Nosings: 60mm deep, 30mm thick, 5mm raised, 3mm overhang; sliding friction 1.35x.")
+        print("Nosings: 60mm deep, 30mm thick, 5mm raised, 3mm overhang; sliding friction 1.25.")
     print("No automatic resets. Hardware safety remains unverified.")
     if args.headless:
         args.policy_adapter = Path(adapter.__file__).resolve()

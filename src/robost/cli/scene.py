@@ -17,6 +17,7 @@ import numpy as np
 from robost.paths import ROOT
 from robost.simulation.hardware import get_hardware, JOINT_NAMES
 from robost.simulation.model import robot_spec
+from robost.simulation.contact import configure_foot_contacts
 from robost.simulation.terrain import add_to_spec, Terrain, FRICTION
 
 
@@ -34,6 +35,7 @@ def build_scene(payload="nominal", terrain=None):
         rgba=(0.7, 0.7, 0.7, 1.0),
     )
     add_to_spec(spec, terrain)
+    configure_foot_contacts(spec)
     spec.worldbody.add_light(name="scene_light", pos=(2.0, -2.0, 6.0), dir=(0.0, 0.0, -1.0))
     for name, limit in zip(JOINT_NAMES, hardware.effort_limits):
         spec.add_actuator(

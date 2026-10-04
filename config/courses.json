@@ -9,7 +9,7 @@
     "strip_depth_m": 0.06,
     "strip_thickness_m": 0.03,
     "strip_overhang_m": 0.003,
-    "strip_friction_multiplier": 1.35,
+    "strip_friction_multiplier": 1.25,
     "exit_clearance_m": 0.15
   }
 }

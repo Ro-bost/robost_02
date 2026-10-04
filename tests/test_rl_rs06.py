@@ -182,7 +182,7 @@ class AdaptationTests(unittest.TestCase):
                     self.assertAlmostEqual(first.size[1] * 2, 1.6)
                     self.assertAlmostEqual(plateau.pos[2] + plateau.size[2], 10 * (rise - 0.005))
                     np.testing.assert_allclose(strip.size, [0.03, 0.8, 0.015])
-                    np.testing.assert_array_equal(strip.friction, [1.35, 0.005, 0.0001])
+                    np.testing.assert_array_equal(strip.friction, [1.25, 0.005, 0.0001])
                     np.testing.assert_array_equal(first.friction, [1.0, 0.005, 0.0001])
                     self.assertEqual(len(output.geometries), 40)
 

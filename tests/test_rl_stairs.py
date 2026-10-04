@@ -7,12 +7,59 @@ import numpy as np
 from types import SimpleNamespace
 from robost.rl.stairs import CourseCfg, make_cfg, planar_tracking, course_bounds, course_end
 from robost.rl.base import get_hardware
+from robost.rl import base
 from robost.simulation.hardware import JOINT_NAMES
 from robost.simulation.terrain import Terrain
 from mjlab.terrains.terrain_generator import TerrainGenerator, TerrainGeneratorCfg
+from mjlab.scene import Scene
 
 
 class StairTests(unittest.TestCase):
+    def test_effective_tpu_contacts_match_flat_stair_and_generated_training_scenes(self):
+        flat = base.make_cfg(1, evaluate=True)
+        stairs = make_cfg(1, evaluate=True)
+        stairs.scene.spec_fn = lambda spec: base.add_stair_course(spec, 0.18)
+        training = make_cfg(1, evaluate=False)
+        training.scene.terrain.terrain_generator.num_rows = 3
+        for label, cfg in (("flat", flat), ("stairs", stairs), ("training", training)):
+            with self.subTest(scene=label):
+                scene = Scene(cfg.scene, device="cpu")
+                model = scene.compile()
+                surfaces = list(scene.spec.body("terrain").geoms)
+                self.assertEqual(model.npair, 4 * len(surfaces))
+                self.assertTrue(np.all(model.pair_dim == 4))
+                foot = model.geom("robot/FR_foot_collision_foot").id
+                radius = model.geom_size[foot, 0]
+                data = mujoco.MjData(model)
+                # Forward actual contacts, rather than checking only geom
+                # declarations: default max-friction mixing hides TPU values.
+                targets = [surfaces[0]]
+                if label != "flat":
+                    targets += [
+                        next(g for g in surfaces if g.name.endswith("_up_1")),
+                        next(g for g in surfaces if g.name.endswith("_up_1_strip_up")),
+                    ]
+                for surface in targets:
+                    mujoco.mj_resetDataKeyframe(model, data, 0)
+                    mujoco.mj_forward(model, data)
+                    geom = model.geom(surface.name)
+                    position = data.geom_xpos[geom.id].copy()
+                    if geom.type[0] == mujoco.mjtGeom.mjGEOM_BOX:
+                        position[2] += geom.size[2]
+                        if surface is surfaces[0]:
+                            position[0] -= geom.size[0] - 0.25
+                    position[2] += radius - 1e-4
+                    data.qpos[:3] += position - data.geom_xpos[foot]
+                    mujoco.mj_forward(model, data)
+                    contacts = [c for c in data.contact if set(c.geom) == {foot, geom.id}]
+                    self.assertTrue(contacts, (label, surface.name))
+                    sliding = 1.25 if "_strip_" in surface.name else 0.8
+                    for contact in contacts:
+                        self.assertEqual(contact.dim, 4)
+                        np.testing.assert_array_equal(
+                            contact.friction, [sliding, sliding, 0.003, 0.0001, 0.0001]
+                        )
+
     def test_multirow_curriculum_compiles_unique_physical_tiles(self):
         cfg = TerrainGeneratorCfg(
             seed=42,

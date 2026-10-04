@@ -10,9 +10,54 @@ import numpy as np
 from robost.cli.scene import build_scene, run_hold
 from robost.simulation.hardware import get_hardware, JOINT_NAMES
 from robost.simulation.model import robot_spec
+from robost.simulation.contact import configure_foot_contacts
 
 
 class SceneTests(unittest.TestCase):
+    def test_actual_foot_contacts_use_tpu_friction_and_nosing_override(self):
+        _, model, data = build_scene()
+        foot = model.geom("FR_foot_collision_foot").id
+        radius = model.geom_size[foot, 0]
+        self.assertEqual(model.npair, 4 * 40)
+        for surface, position, sliding in (
+            ("floor", [0.0, 0.0, radius - 1e-4], 0.8),
+            ("course_up_1", [0.90, 0.0, 0.175 + radius - 1e-4], 0.8),
+            ("course_up_1_strip_up", [0.78, 0.0, 0.18 + radius - 1e-4], 1.25),
+        ):
+            with self.subTest(surface=surface):
+                mujoco.mj_resetDataKeyframe(model, data, model.key("stand").id)
+                mujoco.mj_forward(model, data)
+                data.qpos[:3] += np.asarray(position) - data.geom_xpos[foot]
+                mujoco.mj_forward(model, data)
+                expected_geoms = {foot, model.geom(surface).id}
+                contacts = [c for c in data.contact if set(c.geom) == expected_geoms]
+                self.assertTrue(contacts)
+                for contact in contacts:
+                    self.assertEqual(contact.dim, 4)
+                    np.testing.assert_array_equal(
+                        contact.friction, [sliding, sliding, 0.003, 0.0001, 0.0001]
+                    )
+
+    def test_contact_configuration_is_idempotent_and_respects_collision_masks(self):
+        spec, _, _ = build_scene()
+        terrain = spec.body("terrain")
+        for name, mask in (("terrain_visual_only", 0), ("terrain_disjoint_mask", 2)):
+            terrain.add_geom(
+                name=name,
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=[0.1, 0.1, 0.1],
+                mass=0.0,
+                contype=mask,
+                conaffinity=mask,
+            )
+        configure_foot_contacts(spec)
+        configure_foot_contacts(spec)
+        self.assertEqual(len(spec.pairs), 160)
+        paired = {name for pair in spec.pairs for name in (pair.geomname1, pair.geomname2)}
+        self.assertNotIn("terrain_visual_only", paired)
+        self.assertNotIn("terrain_disjoint_mask", paired)
+        self.assertFalse(any("_calf_collision_" in name for name in paired))
+
     def test_exported_scene_restores_standing_pose_without_changing_references(self):
         spec, model, initialized = build_scene()
         hardware = get_hardware()

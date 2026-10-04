@@ -28,15 +28,27 @@ The robot at its initial standing pose beside the complete 18 cm stair course, i
 | Stair count | 10 ascending + 10 descending |
 | Landing length / stair width | 1.0 / 1.6 m |
 | Nosing | 6 cm deep, 3 cm thick, 0.5 cm raised, 0.3 cm overhang |
-| Sliding friction: ordinary stairs / nosings | 1.0 / 1.35 |
+| Terrain geom sliding friction: ordinary stairs / nosings | 1.0 / 1.25 |
+| TPU foot geom friction (sliding / torsional / rolling) | 0.8 / 0.003 m / 0.0001 m |
+| TPU foot contact dimensions (`condim`) | 4: normal, two tangential, torsional |
 
 Robot assets are in `assets/rs06/`. Terrain dimensions are in `config/courses.json`. The URDF mass, inertia, joint limits and collision geometry are retained.
 
 The approved side section is repeated symmetrically on ascent and descent, with
 nosings at both ends of the landing. At the default 18 cm setting, the landing's
 plain surface is 1.75 m high and its nosing tops are 1.755 m high. The first nosing
-starts at x = 0.75 m; the final nosing ends at x = 7.462 m. Only sliding friction
-is multiplied by 1.35 on nosings; torsional and rolling parameters retain their original values.
+starts at x = 0.75 m; the final nosing ends at x = 7.462 m. Nosing geom sliding
+friction is 1.25. Explicit foot–terrain pairs ensure the TPU coefficients are
+used despite MuJoCo's default maximum-of-geoms friction rule:
+
+| Foot contact surface | Sliding | Torsional | Rolling parameter | `condim` |
+|---|---:|---:|---:|---:|
+| Floor / ordinary stairs | 0.8 | 0.003 m | 0.0001 m (inactive) | 4 |
+| Nosing strips | 1.25 | 0.003 m | 0.0001 m (inactive) | 4 |
+
+`src/robost/simulation/contact.py` defines the foot material and shared contact
+pairs for CPU scenes, GPU evaluation and generated training terrain. Other
+robot collisions retain their original friction and contact dimensions.
 Existing policy results below describe the previous stair geometry and friction;
 the revised course requires new evaluation.
 

@@ -31,6 +31,7 @@ from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
 
 from robost.paths import RS06_PACKAGE, SOURCE, CONFIG
 from robost.simulation.hardware import get_hardware
+from robost.simulation.contact import configure_foot_contacts
 from robost.simulation.terrain import Terrain, add_to_spec
 
 LEGS = ("FR", "FL", "RR", "RL")
@@ -85,6 +86,7 @@ def flat_height_reward(env):
 def make_cfg(num_envs=256, seed=42, evaluate=False):
     cfg = unitree_go1_flat_env_cfg()
     cfg.scene.entities = {"robot": robot_cfg()}
+    cfg.scene.spec_fn = configure_foot_contacts
     cfg.scene.num_envs = num_envs
     cfg.seed = seed
     for sensor in cfg.scene.sensors:
@@ -203,6 +205,7 @@ def runner_cfg():
 def add_stair_course(spec, rise=0.18):
     """Real-size 10-up / 1m landing / 10-down course including edge strips."""
     add_to_spec(spec, Terrain("stairs", rise * 100))
+    configure_foot_contacts(spec)
 
 
 def play(args, cfg_factory=make_cfg):

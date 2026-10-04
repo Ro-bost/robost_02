@@ -77,7 +77,7 @@ class TerrainTests(unittest.TestCase):
         self.assertTrue(contacts)
         for contact in contacts:
             self.assertEqual(contact.dim, 3)
-            np.testing.assert_allclose(contact.friction[:2], [1.35, 1.35])
+            np.testing.assert_allclose(contact.friction[:2], [1.25, 1.25])
         # Upward rays distinguish the overhang underside from a solid riser.
         geomid = np.array([-1], dtype=np.int32)
         distance = mujoco.mj_ray(
@@ -155,7 +155,7 @@ class TerrainTests(unittest.TestCase):
         self.assertEqual(metadata["strip_height_m"], 0.005)
         self.assertEqual(metadata["strip_thickness_m"], 0.03)
         self.assertEqual(metadata["strip_overhang_m"], 0.003)
-        self.assertEqual(metadata["strip_friction"], [1.35, 0.005, 0.0001])
+        self.assertEqual(metadata["strip_friction"], [1.25, 0.005, 0.0001])
 
 
 if __name__ == "__main__":
