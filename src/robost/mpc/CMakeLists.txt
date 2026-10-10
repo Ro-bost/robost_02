@@ -57,8 +57,13 @@ endif()
 
 # --- Controller library ---------------------------------------------------------
 add_library(robost_mpc_core
+  src/actuator_model.cpp
+  src/contact_estimator.cpp
   src/convex_mpc.cpp
   src/mujoco_robot.cpp
+  src/stair_planner.cpp
+  src/terrain.cpp
+  src/wbic.cpp
   src/locomotion_controller.cpp)
 target_include_directories(robost_mpc_core PUBLIC include)
 target_link_libraries(robost_mpc_core PUBLIC Eigen3::Eigen mujoco::mujoco ${OSQP_TARGET})

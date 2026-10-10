@@ -113,11 +113,23 @@ MpcSolution ConvexMpc::Solve(const MpcProblem& problem) const {
   const int n_var = nu * k;
   MpcSolution sol;
 
-  // Linearize once about the current yaw and foot positions for the horizon.
+  // Linearize about the current yaw. A and g do not depend on the feet; B is
+  // rebuilt per step when per-step lever arms are given (feet that land
+  // inside the horizon), otherwise the current ones are used throughout.
   const double yaw = problem.x0(2);
-  Mat12 Ad, Bd;
+  const Mat12 Ac = ContinuousA(yaw);
+  Mat12 Ad;
   Vec12 gd;
-  Discretize(ContinuousA(yaw), ContinuousB(yaw, problem.r_foot), &Ad, &Bd, &gd);
+  std::vector<Mat12> Bd_steps(k);
+  for (int j = 0; j < k; ++j) {
+    const bool per_step = j < static_cast<int>(problem.r_foot_steps.size());
+    if (j > 0 && !per_step) {
+      Bd_steps[j] = Bd_steps[0];
+      continue;
+    }
+    const FootArray& r_f = per_step ? problem.r_foot_steps[j] : problem.r_foot;
+    Discretize(Ac, ContinuousB(yaw, r_f), &Ad, &Bd_steps[j], &gd);
+  }
 
   // Prediction matrices.
   std::vector<Mat12> A_pow(k + 1);
@@ -133,7 +145,7 @@ MpcSolution ConvexMpc::Solve(const MpcProblem& problem) const {
     c = Ad * c + gd;
     C_qp.segment(i * nx, nx) = c;
     for (int j = 0; j <= i; ++j) {
-      B_qp.block(i * nx, j * nu, nx, nu) = A_pow[i - j] * Bd;
+      B_qp.block(i * nx, j * nu, nx, nu) = A_pow[i - j] * Bd_steps[j];
     }
   }
 
@@ -159,7 +171,9 @@ MpcSolution ConvexMpc::Solve(const MpcProblem& problem) const {
   P.setFromTriplets(trip.begin(), trip.end());
 
   // Friction cone + normal force bounds.
-  const int n_con = 5 * kNumLegs * k;
+  const int n_cone = 5 * kNumLegs * k;
+  const bool torque_rows = !problem.torque_bound.empty();
+  const int n_con = n_cone + (torque_rows ? 3 * kNumLegs * k : 0);
   const double mu = params_.mu;
   Eigen::VectorXd lo(n_con), hi(n_con);
   trip.clear();
@@ -173,9 +187,24 @@ MpcSolution ConvexMpc::Solve(const MpcProblem& problem) const {
       trip.emplace_back(row + 2, col + 1, 1.0); trip.emplace_back(row + 2, col + 2, -mu);
       trip.emplace_back(row + 3, col + 1, 1.0); trip.emplace_back(row + 3, col + 2, mu);
       trip.emplace_back(row + 4, col + 2, 1.0);
+      const double f_max = problem.fz_max.cols() > i ? problem.fz_max(leg, i) : params_.f_max;
       lo.segment<5>(row) << -OSQP_INFTY, 0.0, -OSQP_INFTY, 0.0, stance * params_.f_min;
-      hi.segment<5>(row) << 0.0, OSQP_INFTY, 0.0, OSQP_INFTY, stance * params_.f_max;
+      hi.segment<5>(row) << 0.0, OSQP_INFTY, 0.0, OSQP_INFTY, stance * f_max;
     }
+  }
+  if (torque_rows) {
+    for (int i = 0; i < k; ++i)
+      for (int leg = 0; leg < kNumLegs; ++leg) {
+        const JointTorqueBound& b = problem.torque_bound[i][leg];
+        const int col = i * nu + 3 * leg;
+        for (int r = 0; r < 3; ++r) {
+          const int row = n_cone + (i * kNumLegs + leg) * 3 + r;
+          for (int c = 0; c < 3; ++c)
+            if (b.G(r, c) != 0.0) trip.emplace_back(row, col + c, b.G(r, c));
+          lo(row) = b.lo(r);
+          hi(row) = b.hi(r);
+        }
+      }
   }
   SpMat A_con(n_con, n_var);
   A_con.setFromTriplets(trip.begin(), trip.end());
